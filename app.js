@@ -2,12 +2,16 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const Listing = require("./models/listing.js")
+const Review = require("./models/review.js")
 const data = require("./init/data.js")
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/ExpressError.js");
 const wrapAsync = require("./utils/wrapAsync.js");
+const {lisringSchema} = require("./schema.js");
+
+
 
 
 
@@ -75,13 +79,20 @@ app.get("/listings/:id", wrapAsync(async (req, res) => {
 
 //--Create Route
 app.post("/listings", wrapAsync(async (req, res, next) => {
-
-   const newListing = new Listing(req.body.listing);         // database sysntax:  /*const user1 = new User({name: 
+   // let result = listingSchema.validate(req.body);
+   // console.log(result);
+   // if(resourceLimits.error){
+   //    throw new ExpressError(400, resourceLimits.error);
+   // }
+   const newListing = new Listing(req.body.listing);
    await newListing.save();
    res.redirect("/listings");
 
 
 }));
+
+
+
 
 //--Edit Route
 
@@ -106,6 +117,17 @@ app.delete("/listings/:id", wrapAsync(async (req, res) => {
    res.redirect("/listings");
 }));
 
+//-review route
+
+app.post("/listings/:id/reviews", async(req,res)=>{
+  let listing = await Listing.findById(req.params.id);
+  let newReview = new Review(req.body.review)  // yaha pe store ho jayeg client to server newReview k pass
+ await listing.review.push(newReview); 
+  await newReview.save();
+ await listing.save()
+res.redirect(`/listings/${listing._id}`)
+});
+
 //===============ADD EXPRESS ERROR=======================
 
 // app.all("*", (req, res, next) => {
@@ -114,11 +136,12 @@ app.delete("/listings/:id", wrapAsync(async (req, res) => {
 
 
 app.use((err, req, res, next) => {
-   let { statusCode = 500, message = "Something went wrong" } = err;
-   res.render("error.ejs",{message, statusCode});
-   // res.status(statusCode).send(message);
-
+   const { statusCode = 500, message = "Something went wrong!" } = err;
+   res.status(statusCode).render("error", { message, statusCode });
 });
+
+
+
 
 // Listing validation failed: price: Path `price` is required., location: Path `location` is required., country: Path `country` is required.
 
